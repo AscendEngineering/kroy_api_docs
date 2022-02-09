@@ -5,204 +5,100 @@ info:
 paths: 
   /getAuthToken: 
     get: 
+      summary: Returns authentication token for a given user
       operationId: getAuthToken
       parameters: 
-      - name: username
-        in: path
+      - in: body
         required: true
+        description: "Payload describing which user to get authentication token for. \"sub\" parameter is type of user, which is classified as 1212 for client and 9898 for admin"
         schema:
-          type: string
-      - name: sub
-        in: header
-        required: true
-        schema:
-          type: integer
+          type: body
+          properties:
+            name:
+              type: string
+            password:
+              type: string
+            sub:
+              type: integer
+              enum: [1212,9898]
+      
       responses: 
         '200':
-          description: The User
+          description: Authentication token to be used to validate at the /authenticate endpoint
           content:
             application/json:
-              schema: 
-                $ref: '#/components/schemas/user'
-          links:
-            userRepositories:
-              $ref: '#/components/links/UserRepositories'
-  /2.0/repositories/{username}:
+              schema:
+                properties:
+                  auth_token: 
+                    type: string
+
+  /authenticate:
     get:
-      operationId: getRepositoriesByOwner
+      summary: Authenticates the user so that they can hit other endpoints (authentication expires after 1 hours)
+      operationId: authenticate
       parameters:
-        - name: username
-          in: path
+        - name: auth_token
+          in: header
           required: true
+          description: Authentication token from /getAuthToken
           schema:
             type: string
       responses:
         '200':
-          description: repositories owned by the supplied user
-          content: 
+          description: Successful authentication
+
+  /getActiveDevices: 
+    get: 
+      summary: Get all active devices
+      operationId: getActiveDevices
+      parameters: 
+        - name: auth_token
+          in: header
+          required: true
+          description: Authentication token from /getAuthToken
+          schema:
+            type: string
+      responses: 
+        '200':
+          description: all active devices
+          content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/repository'
-          links:
-            userRepository:
-              $ref: '#/components/links/UserRepository'
-  /2.0/repositories/{username}/{slug}: 
+                properties:
+                  data: 
+                    type: string
+
+  /getData: 
     get: 
-      operationId: getRepository
+      summary: Get data about a device
+      operationId: getData
       parameters: 
-        - name: username
-          in: path
+        - name: auth_token
+          in: header
           required: true
+          description: Authentication token from /getAuthToken
           schema:
             type: string
-        - name: slug
-          in: path
+        - in: body
           required: true
+          description: ""
           schema:
-            type: string
+            type: body
+            description: Device id and lookback period (how many previous hours of data)
+            properties:
+              device_id:
+                type: string
+                example: West Chicago 5M-South Demo
+              lookback_period:
+                type: integer
+                example: 5
       responses: 
         '200':
-          description: The repository
+          description: data about the device
           content:
-              application/json: 
-                schema: 
-                  $ref: '#/components/schemas/repository'
-          links:
-            repositoryPullRequests:
-              $ref: '#/components/links/RepositoryPullRequests'
-  /2.0/repositories/{username}/{slug}/pullrequests: 
-    get: 
-      operationId: getPullRequestsByRepository
-      parameters: 
-      - name: username
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: slug
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: state
-        in: query
-        schema:
-          type: string
-          enum: 
-            - open
-            - merged
-            - declined
-      responses: 
-        '200':
-          description: an array of pull request objects
-          content:
-            application/json: 
-              schema: 
-                type: array
-                items: 
-                  $ref: '#/components/schemas/pullrequest'
-  /2.0/repositories/{username}/{slug}/pullrequests/{pid}: 
-    get: 
-      operationId: getPullRequestsById
-      parameters: 
-      - name: username
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: slug
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: pid
-        in: path
-        required: true
-        schema:
-          type: string
-      responses: 
-        '200':
-          description: a pull request object
-          content:
-            application/json: 
-              schema: 
-                $ref: '#/components/schemas/pullrequest'
-          links:
-            pullRequestMerge:
-              $ref: '#/components/links/PullRequestMerge'
-  /2.0/repositories/{username}/{slug}/pullrequests/{pid}/merge: 
-    post: 
-      operationId: mergePullRequest
-      parameters: 
-      - name: username
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: slug
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: pid
-        in: path
-        required: true
-        schema:
-          type: string
-      responses: 
-        '204':
-          description: the PR was successfully merged
-components:
-  links:
-    UserRepositories:
-      # returns array of '#/components/schemas/repository'
-      operationId: getRepositoriesByOwner
-      parameters:
-        username: $response.body#/username
-    UserRepository:
-      # returns '#/components/schemas/repository'
-      operationId: getRepository
-      parameters:
-        username: $response.body#/owner/username
-        slug: $response.body#/slug
-    RepositoryPullRequests:
-      # returns '#/components/schemas/pullrequest'
-      operationId: getPullRequestsByRepository
-      parameters: 
-          username: $response.body#/owner/username
-          slug: $response.body#/slug
-    PullRequestMerge:
-      # executes /2.0/repositories/{username}/{slug}/pullrequests/{pid}/merge
-      operationId: mergePullRequest
-      parameters:
-        username: $response.body#/author/username
-        slug: $response.body#/repository/slug
-        pid: $response.body#/id
-  schemas: 
-    user: 
-      type: object
-      properties: 
-        username: 
-          type: string
-        uuid: 
-          type: string
-    repository: 
-      type: object
-      properties: 
-        slug: 
-          type: string
-        owner: 
-          $ref: '#/components/schemas/user'
-    pullrequest: 
-      type: object
-      properties: 
-        id: 
-          type: integer
-        title: 
-          type: string
-        repository: 
-          $ref: '#/components/schemas/repository'
-        author: 
-          $ref: '#/components/schemas/user'
+            application/json:
+              schema:
+                properties:
+                  data: 
+                    type: string
+ 

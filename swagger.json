@@ -1,0 +1,27 @@
+definition:
+  CatalogItem:
+    type: object
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+      image:
+        type: object
+        properties:
+          url:
+            type: string
+          width:
+            type: integer
+          height:
+            type: integer
+    required:
+      - id
+      - name
+    example:   # <----------
+      id: 38
+      name: T-shirt
+      image:
+        url: images/38.png
+        width: 100
+        height: 100

@@ -65,8 +65,13 @@ paths:
             application/json:
               schema:
                 properties:
-                  data: 
-                    type: string
+                  active_devices: 
+                    type: array
+                    items:
+                      type: string
+                    example: [Barrington Device 1, Barrington Device 2, Shaumberg Device 1,]
+
+
 
   /getData: 
     get: 
